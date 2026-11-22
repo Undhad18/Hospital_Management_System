@@ -1,0 +1,6 @@
+{
+  "css.lint.unknownAtRules": "ignore",
+  "terminal.integrated.env.windows": {
+    "ComSpec": "C:\\Windows\\SysWOW64\\cmd.exe"
+  }
+}

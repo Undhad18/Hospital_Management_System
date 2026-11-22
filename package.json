@@ -1,0 +1,26 @@
+{
+  "name": "hospital-management-system",
+  "version": "1.0.0",
+  "description": "Multi-Hospital Enterprise Healthcare Management System",
+  "private": true,
+  "scripts": {
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:super-admin": "npm --prefix apps/super-admin run dev",
+    "dev:hospital-admin": "npm --prefix apps/hospital-admin run dev",
+    "dev:doctor": "npm --prefix apps/doctor run dev",
+    "dev:staff": "npm --prefix apps/staff run dev",
+    "dev:patient": "npm --prefix apps/patient run dev",
+    "dev:all": "node scripts/start-all.js",
+    "build:all": "node scripts/build-all.js",
+    "postinstall": "node scripts/patch-vite.js",
+    "test:m18": "node backend/tests/lesson-18.test.js",
+    "test": "node backend/tests/lesson-18.test.js"
+  },
+  "workspaces": [
+    "backend",
+    "apps/*"
+  ],
+  "dependencies": {
+    "pdfkit": "^0.20.2"
+  }
+}
