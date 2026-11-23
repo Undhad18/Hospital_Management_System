@@ -1,0 +1,15 @@
+{
+  "name": "@mern/shared",
+  "version": "1.0.0",
+  "description": "Shared constants, validation schemas, and types between React frontend and Express backend",
+  "main": "./index.cjs",
+  "module": "./index.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.cjs",
+      "default": "./index.js"
+    }
+  }
+}

@@ -1,120 +1,66 @@
-
-// Hospital Management System API Server
-const express = require("express");
-const cors = require("cors");
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
-
-const pool = require("./db");
-
-const hospitalsRouter = require("./routes/hospitals");
-const departmentsRouter = require("./routes/departments");
-const masterDepartmentsRouter = require("./routes/masterDepartments");
-const usersRouter = require("./routes/users");
-const authRouter = require("./routes/auth");
-const locationsRouter = require("./routes/locations");
-const designationsRouter = require("./routes/designations");
-const doctorsRouter = require("./routes/doctors");
-const staffRouter = require("./routes/staff");
-const patientsRouter = require("./routes/patients");
-const appointmentsRouter = require("./routes/appointments");
-const opdRouter = require("./routes/opd");
-const consultationsRouter = require("./routes/consultations");
-const notificationsRouter = require("./routes/notifications");
-const admissionsRouter = require("./routes/admissions");
-const wardsRouter = require("./routes/wards");
-const bedsRouter = require("./routes/beds");
-const labsRouter = require("./routes/labs");
-const pharmacyRouter = require("./routes/pharmacy");
-const pharmacyReportsRouter = require("./routes/pharmacyReports");
-const prescriptionsRouter = require("./routes/prescriptions");
-const consultationBillingRouter = require("./routes/consultationBilling");
-const aiRouter = require("./routes/ai");
-const digitalTwinRouter = require("./routes/digitalTwin");
-const { startReminderScheduler } = require("./services/reminderScheduler");
+require("dotenv").config();
 const http = require("http");
-const { initSocketServer } = require("./services/socketService");
+const app = require("./app");
+const pool = require("./config/db");
+const initTables = require("./config/initTables");
+const { initSocket } = require("./services/socketService");
 
-const app = express();
-const server = http.createServer(app);
-const io = initSocketServer(server);
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-app.use("/api/hospitals", hospitalsRouter);
-app.use("/api/departments", departmentsRouter);
-app.use("/api/master-departments", masterDepartmentsRouter);
-app.use("/api/doctors", doctorsRouter);
-app.use("/api/staff", staffRouter);
-app.use("/api/patients", patientsRouter);
-app.use("/api/appointments", appointmentsRouter);
-app.use("/api/opd", opdRouter);
-app.use("/api/consultations", consultationsRouter);
-app.use("/api/notifications", notificationsRouter);
-app.use("/api/admissions", admissionsRouter);
-app.use("/api/wards", wardsRouter);
-app.use("/api/beds", bedsRouter);
-app.use("/api/labs", labsRouter);
-app.use("/api/pharmacy/reports", pharmacyReportsRouter);
-app.use("/api/pharmacy", pharmacyRouter);
-app.use("/api/prescriptions", prescriptionsRouter);
-app.use("/api/consultation-billing", consultationBillingRouter);
-app.use("/api/ai", aiRouter);
-app.use("/api/digital-twin", digitalTwinRouter);
-app.use("/api/users", usersRouter);
-app.use("/api/auth", authRouter);
-app.use("/api/locations", locationsRouter);
-app.use("/api/designations", designationsRouter);
-
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "Hospital Management API is running",
-  });
-});
-
-app.get("/api/health/db", async (req, res) => {
+// Test DB Connection and start listening
+const startServer = async () => {
   try {
-    const [rows] = await pool.query("SELECT 1 AS connected");
+    // 1. Verify MySQL connection
+    const connection = await pool.getConnection();
+    console.log("MySQL Database connected successfully.");
+    connection.release();
 
-    res.json({
-      success: true,
-      message: "MySQL connection successful",
-      database: rows[0].connected === 1,
+    // 2. Ensure Database tables are initialized
+    await initTables();
+
+    // 3. Create HTTP Server for Express + Socket.IO WebSockets
+    const httpServer = http.createServer(app);
+
+    // 4. Initialize Socket.IO Real-Time Engine
+    const io = initSocket(httpServer);
+    console.log("🔌 Socket.IO Real-Time Engine initialized.");
+
+    // 5. Start Listening
+    httpServer.listen(PORT, () => {
+      console.log(`🚀 API & WebSocket Server running on http://localhost:${PORT}`);
+      console.log(`📡 Socket.IO listening for real-time order status updates`);
+      console.log(`📧 Background Email Queue initialized and ready`);
+      console.log(`💳 Stripe Checkout & Idempotency Protection active`);
+      console.log(`📖 Swagger API Docs: http://localhost:${PORT}/api-docs`);
     });
+
+    httpServer.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`❌ Port ${PORT} is already in use by another running process.`);
+        console.error(`💡 Free port ${PORT} by stopping the background process before restarting.`);
+      } else {
+        console.error("Server error:", err.message);
+      }
+      process.exit(1);
+    });
+
+    // Graceful shutdown handling
+    const shutdown = () => {
+      console.log("Shutting down server gracefully...");
+      httpServer.close(() => {
+        pool.end().then(() => {
+          console.log("MySQL pool closed. Exiting process.");
+          process.exit(0);
+        });
+      });
+    };
+
+    process.on("SIGTERM", shutdown);
+    process.on("SIGINT", shutdown);
   } catch (error) {
-    console.error("Database connection failed:", error.message);
-
-    res.status(500).json({
-      success: false,
-      message: "Database connection failed",
-    });
+    console.error("Failed to start server due to Database connection error:", error.message);
+    process.exit(1);
   }
-});
+};
 
-// 404 Route Not Found Handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `API endpoint '${req.method} ${req.originalUrl}' not found.`,
-  });
-});
-
-// Global Centralized Error Handler
-app.use((err, req, res, _next) => {
-  console.error(`[Global Error] ${req.method} ${req.originalUrl}:`, err.stack || err.message || err);
-  const status = err.status || err.statusCode || 500;
-  res.status(status).json({
-    success: false,
-    message: err.message || "An unexpected internal server error occurred.",
-    ...(process.env.NODE_ENV !== "production" && { error: err.message }),
-  });
-});
-
-server.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT} with real-time Socket.IO`);
-  startReminderScheduler();
-});
+startServer();

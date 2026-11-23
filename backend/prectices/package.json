@@ -1,0 +1,40 @@
+{
+  "name": "mern_stack_roadmap",
+  "version": "1.0.0",
+  "description": "Welcome to the **MongoDB & REST API Foundations** module of the MERN Stack Roadmap. This guide covers the essential principles of document-based databases (NoSQL / MongoDB) and web service design (APIs, RESTful architecture, HTTP conventions, and JSON contracts).",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/i37excelsior-dot/MERN_Stack_Roadmap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/i37excelsior-dot/MERN_Stack_Roadmap/issues"
+  },
+  "homepage": "https://github.com/i37excelsior-dot/MERN_Stack_Roadmap#readme",
+  "dependencies": {
+    "axios": "^1.20.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.7.0",
+    "mongoose": "^9.10.3",
+    "mysql2": "^3.24.5",
+    "opossum": "^10.0.0",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0",
+    "zod": "^4.6.5"
+  }
+}

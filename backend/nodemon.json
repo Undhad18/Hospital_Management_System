@@ -1,0 +1,5 @@
+{
+  "watch": ["prectices/src/server.js", "src", "prectices/src", "routes", "middleware", "services", "utils", "config"],
+  "ignore": ["uploads/*", "node_modules/*", "*.log"],
+  "ext": "js,json"
+}

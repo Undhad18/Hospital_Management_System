@@ -1,0 +1,304 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ShopSphere Enterprise E-Commerce API Contract",
+    "version": "2.0.0",
+    "description": "Production OpenAPI 3.0 contract for ShopSphere: Auth, Products, ACID Orders & Stripe Checkout, Bull Queue Notifications, APM Distributed Tracing, Progressive Feature Flags, and System Diagnostics."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "http://localhost/api",
+      "description": "Nginx Reverse Proxy Ingress (Same-Origin)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Jane Doe" },
+          "email": { "type": "string", "format": "email", "example": "jane@example.com" },
+          "role": { "type": "string", "enum": ["user", "admin"], "example": "user" },
+          "status": { "type": "integer", "example": 1 },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 4 },
+          "name": { "type": "string", "example": "Gaming Laptop RTX 4070" },
+          "category_id": { "type": "integer", "nullable": true, "example": 1 },
+          "price": { "type": "number", "format": "float", "example": 50000.00 },
+          "discount_price": { "type": "number", "format": "float", "nullable": true, "example": 45000.00 },
+          "stock": { "type": "integer", "example": 10 },
+          "sku": { "type": "string", "nullable": true, "example": "LAP001" },
+          "brand": { "type": "string", "nullable": true, "example": "ASUS" },
+          "image_url": { "type": "string", "nullable": true, "example": "/uploads/products/laptop.jpg" },
+          "status": { "type": "integer", "example": 1 }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 13 },
+          "user_id": { "type": "integer", "example": 1 },
+          "total_amount": { "type": "number", "example": 45000.00 },
+          "status": { "type": "string", "enum": ["placed", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"], "example": "placed" },
+          "shipping_address": { "type": "string", "example": "221B Baker St, London" },
+          "payment_method": { "type": "string", "example": "stripe_card" },
+          "items": { "type": "array", "items": { "type": "object" } },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FeatureFlag": {
+        "type": "object",
+        "properties": {
+          "flag_key": { "type": "string", "example": "new_checkout_v2" },
+          "name": { "type": "string", "example": "Next-Gen Checkout v2" },
+          "description": { "type": "string" },
+          "is_active": { "type": "boolean", "example": true },
+          "rollout_percentage": { "type": "integer", "minimum": 0, "maximum": 100, "example": 50 },
+          "target_roles": { "type": "string", "example": "all" },
+          "whitelist_user_ids": { "type": "string", "example": "1,2" }
+        }
+      },
+      "TraceSpan": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "span_mysql_query_1" },
+          "name": { "type": "string", "example": "MySQL: INSERT INTO orders" },
+          "category": { "type": "string", "enum": ["frontend", "network", "express", "database", "stripe", "queue"], "example": "database" },
+          "durationMs": { "type": "number", "example": 12.4 },
+          "statusCode": { "type": "integer", "example": 200 }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health Check Probe",
+        "tags": ["System"],
+        "responses": {
+          "200": { "description": "Service is operational" }
+        }
+      }
+    },
+    "/api/topology/status": {
+      "get": {
+        "summary": "Production Topology & CDN Status",
+        "tags": ["System"],
+        "responses": {
+          "200": { "description": "Returns edge reverse proxy, CDN headers, and node runtime status" }
+        }
+      }
+    },
+    "/api/diagnostics/system-health": {
+      "get": {
+        "summary": "Live Multi-Tier System Probes",
+        "tags": ["Diagnostics & SRE"],
+        "responses": {
+          "200": { "description": "Live health inspection of MySQL pool, Redis/Queue, and Idempotency store" }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "example": "Jane Doe" },
+                  "email": { "type": "string", "example": "jane@example.com" },
+                  "password": { "type": "string", "example": "secret123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created successfully" },
+          "400": { "description": "Validation error or email already in use" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Authenticate user & issue JWT token",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "example": "admin@example.com" },
+                  "password": { "type": "string", "example": "admin123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Authentication successful, returns token and cookie" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "summary": "List products with search, filtering, and pagination",
+        "tags": ["Products"],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 12 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "category", "in": "query", "schema": { "type": "integer" } },
+          { "name": "minPrice", "in": "query", "schema": { "type": "number" } },
+          { "name": "maxPrice", "in": "query", "schema": { "type": "number" } }
+        ],
+        "responses": {
+          "200": { "description": "List of products and pagination metadata" }
+        }
+      },
+      "post": {
+        "summary": "Create a new product (Admin with Multer image upload)",
+        "security": [{ "BearerAuth": [] }],
+        "tags": ["Products"],
+        "responses": {
+          "201": { "description": "Product created successfully" }
+        }
+      }
+    },
+    "/api/orders/checkout": {
+      "post": {
+        "summary": "Idempotent ACID Checkout & Stripe Payment Processing",
+        "description": "Atomic transaction creating Order and OrderItems in MySQL, protected against double-submit via Idempotency-Key header.",
+        "tags": ["Orders & Stripe"],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string", "example": "e4f3a7c8-912b-4e12-823a-abcdef123456" }
+          },
+          {
+            "name": "X-Trace-Id",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string", "example": "trace_1791520000000_abc" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["items", "shippingAddress"],
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer", "example": 4 },
+                        "quantity": { "type": "integer", "example": 1 },
+                        "price": { "type": "number", "example": 45000.00 }
+                      }
+                    }
+                  },
+                  "shippingAddress": { "type": "string", "example": "221B Baker St, London" },
+                  "paymentMethod": { "type": "string", "example": "stripe_card" },
+                  "shippingTier": { "type": "string", "enum": ["standard", "priority", "express"], "example": "standard" },
+                  "promoCode": { "type": "string", "example": "SAVE20" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Order placed successfully with atomic transaction" },
+          "200": { "description": "Replayed cached response from prior idempotent submission" },
+          "400": { "description": "Validation or cart error" },
+          "500": { "description": "Transaction rollback on failure" }
+        }
+      }
+    },
+    "/api/orders/webhook": {
+      "post": {
+        "summary": "Stripe Asynchronous Webhook Receiver",
+        "description": "Handles payment_intent.succeeded and payment_intent.payment_failed events with HMAC SHA-256 raw body validation.",
+        "tags": ["Orders & Stripe"],
+        "parameters": [
+          {
+            "name": "stripe-signature",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Webhook processed successfully" },
+          "400": { "description": "Invalid signature or payload" }
+        }
+      }
+    },
+    "/api/feature-flags": {
+      "get": {
+        "summary": "List all feature flags and configurations",
+        "tags": ["Feature Flags"],
+        "responses": {
+          "200": { "description": "Array of feature flags" }
+        }
+      }
+    },
+    "/api/feature-flags/evaluate": {
+      "get": {
+        "summary": "Evaluate active feature flags for a user context",
+        "tags": ["Feature Flags"],
+        "parameters": [
+          { "name": "userId", "in": "query", "schema": { "type": "integer" } },
+          { "name": "role", "in": "query", "schema": { "type": "string", "default": "customer" } }
+        ],
+        "responses": {
+          "200": { "description": "Object mapping flag keys to boolean decisions" }
+        }
+      }
+    },
+    "/api/telemetry/traces": {
+      "get": {
+        "summary": "Retrieve APM distributed traces and spans",
+        "tags": ["APM Telemetry"],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 50 } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of distributed trace waterfalls" }
+        }
+      }
+    }
+  }
+}
