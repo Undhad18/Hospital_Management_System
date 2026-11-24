@@ -1,16 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Login from "./pages/Login";
 import Hospitals from "./pages/Hospitals";
-import PendingApprovals from "./pages/PendingApprovals";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePasswordModal from "./pages/ChangePasswordModal";
-import UserManagement from "./pages/UserManagement";
-import Locations from "./pages/Locations";
-import DepartmentsAndDesignations from "./pages/DepartmentsAndDesignations";
-import NotificationHistory from "./pages/NotificationHistory";
-import MasterLabCatalog from "./pages/MasterLabCatalog";
-import MasterMedicineCatalog from "./pages/MasterMedicineCatalog";
+import HeaderClock from "./components/HeaderClock";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Route-based code-split lazy loaded components
+const PendingApprovals = lazy(() => import("./pages/PendingApprovals"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const Locations = lazy(() => import("./pages/Locations"));
+const DepartmentsAndDesignations = lazy(() => import("./pages/DepartmentsAndDesignations"));
+const NotificationHistory = lazy(() => import("./pages/NotificationHistory"));
+const MasterLabCatalog = lazy(() => import("./pages/MasterLabCatalog"));
+const MasterMedicineCatalog = lazy(() => import("./pages/MasterMedicineCatalog"));
+
+const PageFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[300px] p-8">
+    <LoadingSpinner size="lg" color="sky" label="Loading application module..." />
+  </div>
+);
 import {
   PORTALS,
   redirectIfForeignRole,
@@ -30,12 +40,6 @@ export default function App() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [resetEmail, setResetEmail] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Listen for unauthorized 401 events globally
   useEffect(() => {
@@ -476,14 +480,7 @@ export default function App() {
             {/* Useful & Attractive Operational Utilities */}
             <div className="flex items-center space-x-3 shrink-0">
               {/* Shift / System Clock */}
-              <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600">
-                <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>
-                  {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                </span>
-              </div>
+              <HeaderClock />
 
               {/* Live Operational Status Badge */}
               <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-sky-50 border border-sky-200 text-sky-800 text-[11px] font-medium">
@@ -517,6 +514,7 @@ export default function App() {
               </div>
             )}
 
+            <Suspense fallback={<PageFallback />}>
             {activeTab === "hospitals" && <Hospitals token={session.token} />}
             {activeTab === "users" && (
               <UserManagement
@@ -542,6 +540,7 @@ export default function App() {
             {activeTab === "notifications" && (
               <NotificationHistory token={session.token} />
             )}
+            </Suspense>
           </main>
         </div>
       </div>

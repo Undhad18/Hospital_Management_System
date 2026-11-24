@@ -1,12 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Login from "./pages/Login";
 import DoctorDashboard from "./pages/DoctorDashboard";
-import Hospitals from "./pages/Hospitals";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePasswordModal from "./pages/ChangePasswordModal";
-import DoctorProfile from "./pages/DoctorProfile";
-import DoctorPrescriptions from "./pages/DoctorPrescriptions";
+import HeaderClock from "./components/HeaderClock";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Route-based code-split lazy loaded components
+const DoctorProfile = lazy(() => import("./pages/DoctorProfile"));
+const DoctorPrescriptions = lazy(() => import("./pages/DoctorPrescriptions"));
+const Hospitals = lazy(() => import("./pages/Hospitals"));
+
+const PageFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[300px] p-8">
+    <LoadingSpinner size="lg" color="sky" label="Loading doctor module..." />
+  </div>
+);
 import {
   PORTALS,
   redirectIfForeignRole,
@@ -26,12 +36,6 @@ export default function App() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [resetEmail, setResetEmail] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Listen for unauthorized 401 events globally
   useEffect(() => {
@@ -384,14 +388,7 @@ export default function App() {
           {/* Useful & Attractive Operational Utilities */}
           <div className="flex items-center space-x-3 shrink-0">
             {/* Shift / System Clock */}
-            <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600">
-              <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>
-                {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-              </span>
-            </div>
+            <HeaderClock />
 
             {/* Live Operational Status Badge */}
             <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-teal-50 border border-teal-200 text-teal-800 text-[11px] font-medium">
@@ -422,10 +419,12 @@ export default function App() {
             </div>
           )}
 
+          <Suspense fallback={<PageFallback />}>
           {activeTab === "dashboard" && <DoctorDashboard session={session} />}
           {activeTab === "prescriptions" && <DoctorPrescriptions session={session} />}
           {activeTab === "profile" && <DoctorProfile session={session} />}
           {activeTab === "hospitals" && <Hospitals token={session.token} />}
+          </Suspense>
         </main>
       </div>
     </div>

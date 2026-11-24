@@ -1,17 +1,26 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Login from "./pages/Login";
 import PatientDashboard from "./pages/PatientDashboard";
-import MyAppointments from "./pages/MyAppointments";
-import MedicalRecords from "./pages/MedicalRecords";
-import BillsAndPayments from "./pages/BillsAndPayments";
-import ProfileCompletion from "./pages/ProfileCompletion";
 import PublicHome from "./pages/PublicHome";
-import BookAppointmentModal from "./pages/BookAppointmentModal";
 import PatientRegistration from "./pages/PatientRegistration";
 import OtpVerificationModal from "./pages/OtpVerificationModal";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePasswordModal from "./pages/ChangePasswordModal";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Route-based code-split lazy loaded components
+const MyAppointments = lazy(() => import("./pages/MyAppointments"));
+const MedicalRecords = lazy(() => import("./pages/MedicalRecords"));
+const BillsAndPayments = lazy(() => import("./pages/BillsAndPayments"));
+const ProfileCompletion = lazy(() => import("./pages/ProfileCompletion"));
+const BookAppointmentModal = lazy(() => import("./pages/BookAppointmentModal"));
+
+const PageFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[300px] p-8">
+    <LoadingSpinner size="lg" color="sky" label="Loading patient module..." />
+  </div>
+);
 import { patientStore } from "./services/patientData";
 import {
   redirectIfForeignRole,
@@ -277,11 +286,13 @@ export default function App() {
 
       {/* Booking Modal */}
       {isBookingOpen && (
-        <BookAppointmentModal
-          isOpen={isBookingOpen}
-          onClose={() => setIsBookingOpen(false)}
-          onBookingSuccess={handleBookingSuccess}
-        />
+        <Suspense fallback={null}>
+          <BookAppointmentModal
+            isOpen={isBookingOpen}
+            onClose={() => setIsBookingOpen(false)}
+            onBookingSuccess={handleBookingSuccess}
+          />
+        </Suspense>
       )}
 
       {/* Global Flash Toast */}
@@ -459,6 +470,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto w-full px-4 sm:px-6 lg:px-8 py-6 pb-24 md:pb-12">
+        <Suspense fallback={<PageFallback />}>
         {activeTab === "dashboard" && (
           <PatientDashboard
             session={session}
@@ -487,6 +499,7 @@ export default function App() {
             isMandatory={profileGuardTriggered}
           />
         )}
+        </Suspense>
       </main>
 
       {/* Mobile Bottom Navigation Bar */}
@@ -559,11 +572,15 @@ export default function App() {
       </nav>
 
       {/* Book Appointment Modal */}
-      <BookAppointmentModal
-        isOpen={isBookingOpen}
-        onClose={() => setIsBookingOpen(false)}
-        onBookingSuccess={handleBookingSuccess}
-      />
+      {isBookingOpen && (
+        <Suspense fallback={null}>
+          <BookAppointmentModal
+            isOpen={isBookingOpen}
+            onClose={() => setIsBookingOpen(false)}
+            onBookingSuccess={handleBookingSuccess}
+          />
+        </Suspense>
+      )}
 
     </div>
   );

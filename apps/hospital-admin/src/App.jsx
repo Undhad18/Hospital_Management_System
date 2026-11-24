@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import Login from "./pages/Login";
 import Hospitals from "./pages/Hospitals";
 import PendingApprovals from "./pages/PendingApprovals";
@@ -7,29 +7,40 @@ import OtpVerificationModal from "./pages/OtpVerificationModal";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePasswordModal from "./pages/ChangePasswordModal";
-import UserManagement from "./pages/UserManagement";
-import HospitalDepartments from "./pages/HospitalDepartments";
-import NotificationHistory from "./pages/NotificationHistory";
-import AdmissionManagement from "./pages/AdmissionManagement";
-import WardBedManagement from "./pages/WardBedManagement";
-import HospitalLabTests from "./pages/HospitalLabTests";
-import HospitalPharmacy from "./pages/HospitalPharmacy";
-import PrescriptionRegistry from "./pages/PrescriptionRegistry";
-import PharmacyReports from "./pages/PharmacyReports";
-import AiHospitalAssistant from "./pages/AiHospitalAssistant";
-import AiOperationalAnalytics from "./pages/AiOperationalAnalytics";
-import AiAutomatedReports from "./pages/AiAutomatedReports";
-import AiWorkflowNotificationCenter from "./pages/AiWorkflowNotificationCenter";
-import HospitalDigitalTwinDashboard from "./pages/HospitalDigitalTwinDashboard";
-import WardBedDigitalTwin from "./pages/WardBedDigitalTwin";
-import PatientFlowDigitalTwin from "./pages/PatientFlowDigitalTwin";
-import DigitalTwinSimulationCenter from "./pages/DigitalTwinSimulationCenter";
-import FloorplanHeatmapDigitalTwin from "./pages/FloorplanHeatmapDigitalTwin";
-import OtSurgicalSuiteDigitalTwin from "./pages/OtSurgicalSuiteDigitalTwin";
-import EmergencyIncidentCommandDigitalTwin from "./pages/EmergencyIncidentCommandDigitalTwin";
-import DischargeReadinessDigitalTwin from "./pages/DischargeReadinessDigitalTwin";
-import BiomedicalAssetDigitalTwin from "./pages/BiomedicalAssetDigitalTwin";
-import InfectionControlDigitalTwin from "./pages/InfectionControlDigitalTwin";
+import HeaderClock from "./components/HeaderClock";
+import LoadingSpinner from "./components/LoadingSpinner";
+
+// Route-based code-split lazy loaded components
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const HospitalDepartments = lazy(() => import("./pages/HospitalDepartments"));
+const NotificationHistory = lazy(() => import("./pages/NotificationHistory"));
+const AdmissionManagement = lazy(() => import("./pages/AdmissionManagement"));
+const WardBedManagement = lazy(() => import("./pages/WardBedManagement"));
+const HospitalLabTests = lazy(() => import("./pages/HospitalLabTests"));
+const HospitalPharmacy = lazy(() => import("./pages/HospitalPharmacy"));
+const PrescriptionRegistry = lazy(() => import("./pages/PrescriptionRegistry"));
+const PharmacyReports = lazy(() => import("./pages/PharmacyReports"));
+const AiHospitalAssistant = lazy(() => import("./pages/AiHospitalAssistant"));
+const AiOperationalAnalytics = lazy(() => import("./pages/AiOperationalAnalytics"));
+const AiAutomatedReports = lazy(() => import("./pages/AiAutomatedReports"));
+const AiWorkflowNotificationCenter = lazy(() => import("./pages/AiWorkflowNotificationCenter"));
+const HospitalDigitalTwinDashboard = lazy(() => import("./pages/HospitalDigitalTwinDashboard"));
+const WardBedDigitalTwin = lazy(() => import("./pages/WardBedDigitalTwin"));
+const PatientFlowDigitalTwin = lazy(() => import("./pages/PatientFlowDigitalTwin"));
+const DigitalTwinSimulationCenter = lazy(() => import("./pages/DigitalTwinSimulationCenter"));
+const FloorplanHeatmapDigitalTwin = lazy(() => import("./pages/FloorplanHeatmapDigitalTwin"));
+const OtSurgicalSuiteDigitalTwin = lazy(() => import("./pages/OtSurgicalSuiteDigitalTwin"));
+const EmergencyIncidentCommandDigitalTwin = lazy(() => import("./pages/EmergencyIncidentCommandDigitalTwin"));
+const DischargeReadinessDigitalTwin = lazy(() => import("./pages/DischargeReadinessDigitalTwin"));
+const BiomedicalAssetDigitalTwin = lazy(() => import("./pages/BiomedicalAssetDigitalTwin"));
+const InfectionControlDigitalTwin = lazy(() => import("./pages/InfectionControlDigitalTwin"));
+const Hospital3DDigitalTwin = lazy(() => import("./pages/Hospital3DDigitalTwin"));
+
+const PageFallback = () => (
+  <div className="flex flex-col items-center justify-center min-h-[350px] p-8">
+    <LoadingSpinner size="lg" color="sky" label="Loading application module..." />
+  </div>
+);
 import {
   PORTALS,
   redirectIfForeignRole,
@@ -51,12 +62,6 @@ export default function App() {
   const [flashMessage, setFlashMessage] = useState(null);
   const [resetEmail, setResetEmail] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Listen for unauthorized 401 events globally
   useEffect(() => {
@@ -217,6 +222,7 @@ export default function App() {
     ai_reports: "AI Automated Operational Reports",
     ai_automation: "AI Workflow Suggestions & Automation Matrix",
     twin_dashboard: "Hospital Digital Twin — Command Center",
+    twin_3d: "Hospital 3D Spatial Digital Twin & WebGL Model",
     twin_floorplan: "Spatial Floorplan & Congestion Heatmap Twin",
     twin_ot: "Operation Theater (OT) & PACU Surgical Suite Twin",
     twin_emergency: "Emergency Code Blue & Disaster Incident Twin",
@@ -675,6 +681,26 @@ export default function App() {
                                 <span className="flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden" title="Twin Command Center">Twin Command Center</span>
                               </button>
 
+                              {/* 3D Spatial Digital Twin */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab("twin_3d");
+                                  setMobileSidebarOpen(false);
+                                }}
+                                title="3D Spatial Digital Twin (WebGL)"
+                                className={`w-full min-w-0 flex items-center space-x-2.5 px-3 py-2 rounded-md text-xs font-medium transition cursor-pointer text-left ${activeTab === "twin_3d"
+                                  ? "bg-indigo-50 text-indigo-700 font-semibold border-l-2 border-indigo-600 shadow-xs"
+                                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                  }`}
+                              >
+                                <svg className={`w-4 h-4 shrink-0 flex-shrink-0 ${activeTab === "twin_3d" ? "text-indigo-600" : "text-slate-400"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                <span className="flex-1 min-w-0 truncate whitespace-nowrap overflow-hidden" title="3D Spatial Twin">3D Spatial Twin</span>
+                                <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 border border-indigo-200">3D</span>
+                              </button>
+
                               {/* Spatial Floorplan & Heatmap Twin */}
                               <button
                                 type="button"
@@ -908,14 +934,7 @@ export default function App() {
                         {/* Useful & Attractive Operational Utilities */}
                         <div className="flex items-center space-x-3 shrink-0">
                           {/* Shift / System Clock */}
-                          <div className="hidden lg:flex items-center space-x-1.5 px-2.5 py-1 rounded bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-600">
-                            <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>
-                              {currentTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                            </span>
-                          </div>
+                          <HeaderClock />
 
                           {/* Live Operational Status Badge */}
                           <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md bg-sky-50 border border-sky-200 text-sky-800 text-[11px] font-medium">
@@ -954,6 +973,7 @@ export default function App() {
                           </div>
                         )}
 
+                        <Suspense fallback={<PageFallback />}>
                         {activeTab === "hospitals" && <Hospitals token={session.token} />}
 
                         {activeTab === "approvals" && isHospitalAdmin && (
@@ -1026,6 +1046,10 @@ export default function App() {
                           <HospitalDigitalTwinDashboard session={session} />
                         )}
 
+                        {activeTab === "twin_3d" && (
+                          <Hospital3DDigitalTwin session={session} />
+                        )}
+
                         {activeTab === "twin_floorplan" && (
                           <FloorplanHeatmapDigitalTwin session={session} />
                         )}
@@ -1061,6 +1085,7 @@ export default function App() {
                         {activeTab === "twin_simulation" && (
                           <DigitalTwinSimulationCenter session={session} />
                         )}
+                        </Suspense>
                       </main>
                     </div>
                   </div>

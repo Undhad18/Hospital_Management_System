@@ -894,10 +894,17 @@ router.post("/:id/validate-dispense", requireAuth, async (req, res) => {
     for (const item of items) {
       let medId = item.medicine_id;
       if (!medId && item.medicine_name) {
-        const [match] = await pool.query(
-          "SELECT id FROM master_medicines WHERE ? LIKE CONCAT('%', name, '%') AND status = 'active' LIMIT 1",
-          [item.medicine_name.trim()]
+        const trimmedName = item.medicine_name.trim();
+        let [match] = await pool.query(
+          "SELECT id FROM master_medicines WHERE name = ? AND status = 'active' LIMIT 1",
+          [trimmedName]
         );
+        if (!match.length) {
+          [match] = await pool.query(
+            "SELECT id FROM master_medicines WHERE ? LIKE CONCAT('%', name, '%') AND status = 'active' LIMIT 1",
+            [trimmedName]
+          );
+        }
         if (match.length > 0) {
           medId = match[0].id;
         }
